@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript 事件循环动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            padding: 30px;
+            min-height: 800px;
+        }
+
+        .animation-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-panel {
+            background: #2c3e50;
+            border-radius: 15px;
+            padding: 25px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .event-loop-container {
+            width: 100%;
+            height: 600px;
+            position: relative;
+            background: white;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 调用栈 */
+        .call-stack {
+            position: absolute;
+            left: 50px;
+            top: 50px;
+            width: 150px;
+            height: 300px;
+            background: #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+        }
+
+        .call-stack h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .stack-item {
+            background: rgba(255, 255, 255, 0.2);
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            text-align: center;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .stack-item.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Web APIs */
+        .web-apis {
+            position: absolute;
+            right: 50px;
+            top: 50px;
+            width: 200px;
+            height: 150px;
+            background: #e74c3c;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+        }
+
+        .web-apis h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .api-item {
+            background: rgba(255, 255, 255, 0.2);
+            margin: 5px 0;
+            padding: 6px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            text-align: center;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .api-item.active {
+            transform: scale(1);
+        }
+
+        /* 任务队列 */
+        .task-queue {
+            position: absolute;
+            left: 50px;
+            bottom: 100px;
+            width: 250px;
+            height: 100px;
+            background: #f39c12;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+        }
+
+        .task-queue h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .queue-items {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+        }
+
+        .queue-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            transform: translateX(-100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+
+        .queue-item.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* 微任务队列 */
+        .microtask-queue {
+            position: absolute;
+            right: 50px;
+            bottom: 100px;
+            width: 200px;
+            height: 100px;
+            background: #9b59b6;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+        }
+
+        .microtask-queue h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        /* 事件循环箭头 */
+        .event-loop-arrow {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border: 3px solid #2c3e50;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 2s linear infinite;
+        }
+
+        .event-loop-arrow.paused {
+            animation-play-state: paused;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* 数据流动画 */
+        .flow-arrow {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #27ae60;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .flow-arrow.active {
+            opacity: 1;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        /* 代码示例区域 */
+        .code-example {
+            background: #2c3e50;
+            border-radius: 8px;
+            padding: 20px;
+            color: #ecf0f1;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .code-example h4 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        /* 执行日志 */
+        .execution-log {
+            background: #34495e;
+            border-radius: 8px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        .log-item {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: logAppear 0.3s ease forwards;
+        }
+
+        .log-sync {
+            background: rgba(52, 152, 219, 0.2);
+            border-left: 3px solid #3498db;
+        }
+
+        .log-async {
+            background: rgba(231, 76, 60, 0.2);
+            border-left: 3px solid #e74c3c;
+        }
+
+        .log-micro {
+            background: rgba(155, 89, 182, 0.2);
+            border-left: 3px solid #9b59b6;
+        }
+
+        .log-macro {
+            background: rgba(243, 156, 18, 0.2);
+            border-left: 3px solid #f39c12;
+        }
+
+        @keyframes logAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .control-panel {
+                order: -1;
+            }
+        }
+
+        /* 高亮效果 */
+        .highlight {
+            background: rgba(46, 204, 113, 0.3) !important;
+            border: 2px solid #2ecc71 !important;
+            transform: scale(1.05) !important;
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 JavaScript 事件循环可视化</h1>
+            <p>通过动画深入理解异步执行机制</p>
+        </div>
+
+        <div class="main-content">
+            <div class="animation-panel">
+                <div class="event-loop-container">
+                    <!-- 调用栈 -->
+                    <div class="call-stack">
+                        <h3>📚 调用栈</h3>
+                        <div id="stack-items"></div>
+                    </div>
+
+                    <!-- Web APIs -->
+                    <div class="web-apis">
+                        <h3>🌐 Web APIs</h3>
+                        <div id="api-items"></div>
+                    </div>
+
+                    <!-- 宏任务队列 -->
+                    <div class="task-queue">
+                        <h3>📋 宏任务队列</h3>
+                        <div class="queue-items" id="macro-queue"></div>
+                    </div>
+
+                    <!-- 微任务队列 -->
+                    <div class="microtask-queue">
+                        <h3>⚡ 微任务队列</h3>
+                        <div class="queue-items" id="micro-queue"></div>
+                    </div>
+
+                    <!-- 事件循环指示器 -->
+                    <div class="event-loop-arrow" id="event-loop"></div>
+
+                    <!-- 数据流箭头 -->
+                    <div class="flow-arrow" id="flow1" style="left: 220px; top: 120px;">→</div>
+                    <div class="flow-arrow" id="flow2" style="left: 320px; top: 300px;">↓</div>
+                    <div class="flow-arrow" id="flow3" style="left: 180px; top: 380px;">←</div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <h3>🎮 控制面板</h3>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="runExample1()">
+                        经典面试题 1
+                    </button>
+                    <button class="btn btn-success" onclick="runExample2()">
+                        Promise 混合题
+                    </button>
+                    <button class="btn btn-warning" onclick="runExample3()">
+                        复杂嵌套题
+                    </button>
+                    <button class="btn btn-danger" onclick="resetAnimation()">
+                        重置动画
+                    </button>
+                </div>
+
+                <div class="code-example" id="current-code">
+                    <h4>💻 当前执行代码</h4>
+                    <div id="code-content">点击上方按钮选择示例</div>
+                </div>
+
+                <div>
+                    <h4 style="color: #ecf0f1; margin-bottom: 10px;">📝 执行日志</h4>
+                    <div class="execution-log" id="execution-log"></div>
+                </div>
+
+                <div>
+                    <h4 style="color: #ecf0f1; margin-bottom: 10px;">⏱️ 执行控制</h4>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="stepExecution()" style="flex: 1;">
+                            单步执行
+                        </button>
+                        <button class="btn btn-success" onclick="autoExecution()" style="flex: 1;">
+                            自动执行
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 动画状态管理
+        let animationState = {
+            callStack: [],
+            webAPIs: [],
+            macroQueue: [],
+            microQueue: [],
+            executionLog: [],
+            currentStep: 0,
+            isRunning: false,
+            executionSteps: []
+        };
+
+        // DOM 元素引用
+        const elements = {
+            stackItems: document.getElementById('stack-items'),
+            apiItems: document.getElementById('api-items'),
+            macroQueue: document.getElementById('macro-queue'),
+            microQueue: document.getElementById('micro-queue'),
+            executionLog: document.getElementById('execution-log'),
+            codeContent: document.getElementById('code-content'),
+            eventLoop: document.getElementById('event-loop')
+        };
+
+        // 经典面试题示例
+        const examples = {
+            example1: {
+                title: "经典面试题 1 - 基础混合",
+                code: `console.log('1');
+
+setTimeout(() => {
+    console.log('2');
+}, 0);
+
+Promise.resolve().then(() => {
+    console.log('3');
+});
+
+console.log('4');
+
+// 输出顺序：1, 4, 3, 2`,
+                steps: [
+                    { type: 'sync', action: 'push', data: 'console.log("1")', log: '执行: console.log("1")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("1")', log: '输出: 1' },
+                    { type: 'sync', action: 'push', data: 'setTimeout', log: '执行: setTimeout' },
+                    { type: 'async', action: 'move_to_api', data: 'setTimeout callback', log: '移动到 Web APIs: setTimeout' },
+                    { type: 'sync', action: 'pop', data: 'setTimeout', log: '完成: setTimeout 注册' },
+                    { type: 'sync', action: 'push', data: 'Promise.resolve()', log: '执行: Promise.resolve()' },
+                    { type: 'micro', action: 'add_micro', data: 'Promise then', log: '添加微任务: Promise then' },
+                    { type: 'sync', action: 'pop', data: 'Promise.resolve()', log: '完成: Promise.resolve()' },
+                    { type: 'sync', action: 'push', data: 'console.log("4")', log: '执行: console.log("4")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("4")', log: '输出: 4' },
+                    { type: 'micro', action: 'execute_micro', data: 'Promise then', log: '执行微任务: console.log("3")' },
+                    { type: 'micro', action: 'output', data: '3', log: '输出: 3' },
+                    { type: 'macro', action: 'move_to_macro', data: 'setTimeout callback', log: '移动到宏任务队列' },
+                    { type: 'macro', action: 'execute_macro', data: 'setTimeout callback', log: '执行宏任务: console.log("2")' },
+                    { type: 'macro', action: 'output', data: '2', log: '输出: 2' }
+                ]
+            },
+            example2: {
+                title: "Promise 混合题",
+                code: `console.log('start');
+
+Promise.resolve().then(() => {
+    console.log('promise1');
+    Promise.resolve().then(() => {
+        console.log('promise2');
+    });
+});
+
+setTimeout(() => {
+    console.log('timeout');
+}, 0);
+
+console.log('end');
+
+// 输出顺序：start, end, promise1, promise2, timeout`,
+                steps: [
+                    { type: 'sync', action: 'push', data: 'console.log("start")', log: '执行: console.log("start")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("start")', log: '输出: start' },
+                    { type: 'sync', action: 'push', data: 'Promise.resolve()', log: '执行: Promise.resolve()' },
+                    { type: 'micro', action: 'add_micro', data: 'Promise then 1', log: '添加微任务: Promise then 1' },
+                    { type: 'sync', action: 'pop', data: 'Promise.resolve()', log: '完成: Promise.resolve()' },
+                    { type: 'sync', action: 'push', data: 'setTimeout', log: '执行: setTimeout' },
+                    { type: 'async', action: 'move_to_api', data: 'setTimeout callback', log: '移动到 Web APIs: setTimeout' },
+                    { type: 'sync', action: 'pop', data: 'setTimeout', log: '完成: setTimeout 注册' },
+                    { type: 'sync', action: 'push', data: 'console.log("end")', log: '执行: console.log("end")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("end")', log: '输出: end' },
+                    { type: 'micro', action: 'execute_micro', data: 'Promise then 1', log: '执行微任务 1: console.log("promise1")' },
+                    { type: 'micro', action: 'output', data: 'promise1', log: '输出: promise1' },
+                    { type: 'micro', action: 'add_micro', data: 'Promise then 2', log: '添加微任务: Promise then 2' },
+                    { type: 'micro', action: 'execute_micro', data: 'Promise then 2', log: '执行微任务 2: console.log("promise2")' },
+                    { type: 'micro', action: 'output', data: 'promise2', log: '输出: promise2' },
+                    { type: 'macro', action: 'move_to_macro', data: 'setTimeout callback', log: '移动到宏任务队列' },
+                    { type: 'macro', action: 'execute_macro', data: 'setTimeout callback', log: '执行宏任务: console.log("timeout")' },
+                    { type: 'macro', action: 'output', data: 'timeout', log: '输出: timeout' }
+                ]
+            },
+            example3: {
+                title: "复杂嵌套题",
+                code: `console.log('1');
+
+setTimeout(() => {
+    console.log('2');
+    Promise.resolve().then(() => {
+        console.log('3');
+    });
+}, 0);
+
+new Promise(resolve => {
+    console.log('4');
+    resolve();
+}).then(() => {
+    console.log('5');
+    setTimeout(() => {
+        console.log('6');
+    }, 0);
+});
+
+console.log('7');
+
+// 输出顺序：1, 4, 7, 5, 2, 3, 6`,
+                steps: [
+                    { type: 'sync', action: 'push', data: 'console.log("1")', log: '执行: console.log("1")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("1")', log: '输出: 1' },
+                    { type: 'sync', action: 'push', data: 'setTimeout', log: '执行: setTimeout' },
+                    { type: 'async', action: 'move_to_api', data: 'setTimeout callback 1', log: '移动到 Web APIs: setTimeout 1' },
+                    { type: 'sync', action: 'pop', data: 'setTimeout', log: '完成: setTimeout 注册' },
+                    { type: 'sync', action: 'push', data: 'new Promise', log: '执行: new Promise' },
+                    { type: 'sync', action: 'push', data: 'console.log("4")', log: '执行: console.log("4")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("4")', log: '输出: 4' },
+                    { type: 'micro', action: 'add_micro', data: 'Promise then 1', log: '添加微任务: Promise then 1' },
+                    { type: 'sync', action: 'pop', data: 'new Promise', log: '完成: Promise 构造' },
+                    { type: 'sync', action: 'push', data: 'console.log("7")', log: '执行: console.log("7")' },
+                    { type: 'sync', action: 'pop', data: 'console.log("7")', log: '输出: 7' },
+                    { type: 'micro', action: 'execute_micro', data: 'Promise then 1', log: '执行微任务: console.log("5")' },
+                    { type: 'micro', action: 'output', data: '5', log: '输出: 5' },
+                    { type: 'async', action: 'move_to_api', data: 'setTimeout callback 2', log: '移动到 Web APIs: setTimeout 2' },
+                    { type: 'macro', action: 'move_to_macro', data: 'setTimeout callback 1', log: '移动到宏任务队列: setTimeout 1' },
+                    { type: 'macro', action: 'execute_macro', data: 'setTimeout callback 1', log: '执行宏任务 1: console.log("2")' },
+                    { type: 'macro', action: 'output', data: '2', log: '输出: 2' },
+                    { type: 'micro', action: 'add_micro', data: 'Promise then 2', log: '添加微任务: Promise then 2' },
+                    { type: 'micro', action: 'execute_micro', data: 'Promise then 2', log: '执行微任务: console.log("3")' },
+                    { type: 'micro', action: 'output', data: '3', log: '输出: 3' },
+                    { type: 'macro', action: 'move_to_macro', data: 'setTimeout callback 2', log: '移动到宏任务队列: setTimeout 2' },
+                    { type: 'macro', action: 'execute_macro', data: 'setTimeout callback 2', log: '执行宏任务 2: console.log("6")' },
+                    { type: 'macro', action: 'output', data: '6', log: '输出: 6' }
+                ]
+            }
+        };
+
+        // 更新显示函数
+        function updateDisplay() {
+            // 更新调用栈
+            elements.stackItems.innerHTML = '';
+            animationState.callStack.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'stack-item active';
+                div.textContent = item;
+                div.style.animationDelay = `${index * 0.1}s`;
+                elements.stackItems.appendChild(div);
+            });
+
+            // 更新 Web APIs
+            elements.apiItems.innerHTML = '';
+            animationState.webAPIs.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'api-item active';
+                div.textContent = item;
+                div.style.animationDelay = `${index * 0.1}s`;
+                elements.apiItems.appendChild(div);
+            });
+
+            // 更新宏任务队列
+            elements.macroQueue.innerHTML = '';
+            animationState.macroQueue.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'queue-item active';
+                div.textContent = item;
+                div.style.animationDelay = `${index * 0.1}s`;
+                elements.macroQueue.appendChild(div);
+            });
+
+            // 更新微任务队列
+            elements.microQueue.innerHTML = '';
+            animationState.microQueue.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'queue-item active';
+                div.textContent = item;
+                div.style.animationDelay = `${index * 0.1}s`;
+                elements.microQueue.appendChild(div);
+            });
+
+            // 更新事件循环状态
+            if (animationState.isRunning) {
+                elements.eventLoop.classList.remove('paused');
+            } else {
+                elements.eventLoop.classList.add('paused');
+            }
+        }
+
+        // 添加日志
+        function addLog(message, type = 'sync') {
+            const logItem = document.createElement('div');
+            logItem.className = `log-item log-${type}`;
+            logItem.innerHTML = `<span style="color: #bdc3c7;">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+            
+            elements.executionLog.appendChild(logItem);
+            elements.executionLog.scrollTop = elements.executionLog.scrollHeight;
+            
+            animationState.executionLog.push({ message, type, timestamp: Date.now() });
+        }
+
+        // 执行动画步骤
+        function executeStep(step) {
+            addLog(step.log, step.type);
+
+            switch (step.action) {
+                case 'push':
+                    animationState.callStack.push(step.data);
+                    highlightElement('.call-stack');
+                    break;
+                case 'pop':
+                    animationState.callStack.pop();
+                    break;
+                case 'move_to_api':
+                    animationState.webAPIs.push(step.data);
+                    highlightElement('.web-apis');
+                    showFlowArrow('flow1');
+                    break;
+                case 'add_micro':
+                    animationState.microQueue.push(step.data);
+                    highlightElement('.microtask-queue');
+                    showFlowArrow('flow2');
+                    break;
+                case 'execute_micro':
+                    animationState.callStack.push(step.data);
+                    animationState.microQueue.shift();
+                    highlightElement('.microtask-queue');
+                    break;
+                case 'move_to_macro':
+                    animationState.webAPIs = animationState.webAPIs.filter(item => item !== step.data);
+                    animationState.macroQueue.push(step.data);
+                    highlightElement('.task-queue');
+                    showFlowArrow('flow3');
+                    break;
+                case 'execute_macro':
+                    animationState.callStack.push(step.data);
+                    animationState.macroQueue.shift();
+                    highlightElement('.task-queue');
+                    break;
+                case 'output':
+                    // 输出效果
+                    showOutput(step.data);
+                    break;
+            }
+
+            updateDisplay();
+        }
+
+        // 高亮元素
+        function highlightElement(selector) {
+            const element = document.querySelector(selector);
+            element.classList.add('highlight');
+            setTimeout(() => {
+                element.classList.remove('highlight');
+            }, 1000);
+        }
+
+        // 显示流动箭头
+        function showFlowArrow(id) {
+            const arrow = document.getElementById(id);
+            arrow.classList.add('active');
+            setTimeout(() => {
+                arrow.classList.remove('active');
+            }, 1000);
+        }
+
+        // 显示输出效果
+        function showOutput(value) {
+            const outputDiv = document.createElement('div');
+            outputDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #27ae60;
+                color: white;
+                padding: 20px 40px;
+                border-radius: 10px;
+                font-size: 2rem;
+                font-weight: bold;
+                z-index: 1000;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                animation: outputPop 1s ease;
+            `;
+            outputDiv.textContent = `输出: ${value}`;
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes outputPop {
+                    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+                    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            document.body.appendChild(outputDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(outputDiv);
+                document.head.removeChild(style);
+            }, 1500);
+        }
+
+        // 重置动画
+        function resetAnimation() {
+            animationState = {
+                callStack: [],
+                webAPIs: [],
+                macroQueue: [],
+                microQueue: [],
+                executionLog: [],
+                currentStep: 0,
+                isRunning: false,
+                executionSteps: []
+            };
+            
+            elements.executionLog.innerHTML = '';
+            elements.codeContent.innerHTML = '点击上方按钮选择示例';
+            updateDisplay();
+            addLog('动画已重置', 'sync');
+        }
+
+        // 运行示例
+        function runExample(exampleKey) {
+            resetAnimation();
+            const example = examples[exampleKey];
+            animationState.executionSteps = [...example.steps];
+            
+            elements.codeContent.innerHTML = `
+                <h4>${example.title}</h4>
+                <pre style="white-space: pre-wrap; margin-top: 10px;">${example.code}</pre>
+            `;
+            
+            addLog(`开始执行: ${example.title}`, 'sync');
+        }
+
+        // 单步执行
+        function stepExecution() {
+            if (animationState.currentStep < animationState.executionSteps.length) {
+                const step = animationState.executionSteps[animationState.currentStep];
+                executeStep(step);
+                animationState.currentStep++;
+                animationState.isRunning = true;
+                
+                if (animationState.currentStep >= animationState.executionSteps.length) {
+                    addLog('执行完成！', 'sync');
+                    animationState.isRunning = false;
+                    updateDisplay();
+                }
+            }
+        }
+
+        // 自动执行
+        function autoExecution() {
+            if (animationState.isRunning) return;
+            
+            animationState.isRunning = true;
+            
+            const executeNext = () => {
+                if (animationState.currentStep < animationState.executionSteps.length) {
+                    stepExecution();
+                    setTimeout(executeNext, 1500); // 1.5秒间隔
+                } else {
+                    animationState.isRunning = false;
+                    updateDisplay();
+                }
+            };
+            
+            executeNext();
+        }
+
+        // 绑定按钮事件
+        function runExample1() { runExample('example1'); }
+        function runExample2() { runExample('example2'); }
+        function runExample3() { runExample('example3'); }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDisplay();
+            addLog('事件循环可视化已准备就绪', 'sync');
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    stepExecution();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    autoExecution();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    resetAnimation();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
