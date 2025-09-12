@@ -1,5 +1,45 @@
 # React 面试题
 
+## 📋 目录索引
+
+### 🏗️ [基础概念](#基础概念)
+- [1. React 基本概念](#1-react-基本概念)
+- [2. JSX 语法](#2-jsx-语法)
+- [3. 组件和Props](#3-组件和props)
+- [4. State 状态管理](#4-state-状态管理)
+
+### ⚡ [React Hooks](#react-hooks)
+- [5. useState Hook](#5-usestate-hook)
+- [6. useEffect Hook](#6-useeffect-hook)
+- [7. useContext Hook](#7-usecontext-hook)
+- [8. useMemo 和 useCallback](#8-usememo-和-usecallback)
+
+### 🚀 [性能优化](#性能优化)
+- [9. React.memo 和组件优化](#9-reactmemo-和组件优化)
+- [10. 虚拟DOM和协调算法](#10-虚拟dom和协调算法)
+
+### 🔧 [高级概念](#高级概念)
+- [11. 高阶组件 (HOC)](#11-高阶组件-hoc)
+- [12. Render Props 模式](#12-render-props-模式)
+- [13. 错误边界](#13-错误边界)
+
+### 📊 [状态管理](#状态管理)
+- [14. Context vs Redux](#14-context-vs-redux)
+- [15. 自定义Hooks](#15-自定义hooks)
+
+### 🌟 [React 生态系统](#react-生态系统)
+- [16. React Router](#16-react-router)
+- [16.1. React Router 数据路由优化](#161-react-router-数据路由优化)
+- [17. React测试](#17-react测试)
+- [17.1. React Compiler 性能优化](#171-react-compiler-性能优化)
+- [18. React性能监控](#18-react性能监控)
+
+### 💡 [常见问题和最佳实践](#常见问题和最佳实践)
+- [19. React中的key属性](#19-react中的key属性)
+- [20. React组件通信](#20-react组件通信)
+
+---
+
 ## 基础概念
 
 ### 1. React 基本概念
@@ -1233,6 +1273,233 @@ function Users() {
 }
 ```
 
+### 16.1. React Router 数据路由优化
+**问题**: React Router v6.4+ 的数据路由功能如何优化应用性能？
+
+**答案**:
+React Router v6.4引入了数据路由，通过loader和action提供了更好的数据获取和状态管理能力：
+
+```jsx
+// 使用createBrowserRouter和数据路由
+import { 
+  createBrowserRouter, 
+  RouterProvider, 
+  useLoaderData,
+  useActionData,
+  Form,
+  redirect
+} from 'react-router-dom';
+
+// 路由配置with数据加载
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    loader: rootLoader,
+    children: [
+      {
+        path: "users/:userId",
+        element: <UserDetail />,
+        loader: userLoader,
+        action: userAction,
+        errorElement: <UserError />
+      },
+      {
+        path: "posts",
+        element: <Posts />,
+        loader: postsLoader,
+        children: [
+          {
+            path: ":postId",
+            element: <Post />,
+            loader: postLoader,
+            action: postAction
+          }
+        ]
+      }
+    ]
+  }
+]);
+
+// Loader函数 - 预加载数据
+async function userLoader({ params, request }) {
+  const url = new URL(request.url);
+  const search = url.searchParams.get('search');
+  
+  // 并行加载用户数据和相关信息
+  const [user, posts] = await Promise.all([
+    fetch(`/api/users/${params.userId}`),
+    fetch(`/api/users/${params.userId}/posts?search=${search}`)
+  ]);
+  
+  if (!user.ok) {
+    throw new Response("用户不存在", { status: 404 });
+  }
+  
+  return {
+    user: await user.json(),
+    posts: await posts.json()
+  };
+}
+
+// Action函数 - 处理表单提交
+async function userAction({ request, params }) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  
+  switch (intent) {
+    case 'update': {
+      const updates = Object.fromEntries(formData);
+      await updateUser(params.userId, updates);
+      return redirect(`/users/${params.userId}`);
+    }
+    case 'delete': {
+      await deleteUser(params.userId);
+      return redirect('/users');
+    }
+    default: {
+      throw new Error('未知的操作类型');
+    }
+  }
+}
+
+// 组件中使用loader数据
+function UserDetail() {
+  const { user, posts } = useLoaderData();
+  const actionData = useActionData();
+  
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <p>邮箱: {user.email}</p>
+      
+      {/* 表单提交通过action处理 */}
+      <Form method="post">
+        <input type="hidden" name="intent" value="update" />
+        <input 
+          name="name" 
+          defaultValue={user.name}
+          placeholder="用户名" 
+        />
+        <input 
+          name="email" 
+          defaultValue={user.email}
+          placeholder="邮箱" 
+        />
+        <button type="submit">更新用户</button>
+      </Form>
+      
+      {actionData?.error && (
+        <div className="error">{actionData.error}</div>
+      )}
+      
+      <h2>用户帖子</h2>
+      <ul>
+        {posts.map(post => (
+          <li key={post.id}>
+            <Link to={`/posts/${post.id}`}>{post.title}</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// 数据路由的优化技巧
+const optimizedRouter = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    children: [
+      {
+        path: "dashboard",
+        element: <Dashboard />,
+        loader: async () => {
+          // 缓存策略
+          const cached = getCachedData('dashboard');
+          if (cached && !isExpired(cached)) {
+            return cached.data;
+          }
+          
+          const data = await fetch('/api/dashboard');
+          setCachedData('dashboard', await data.json());
+          return data;
+        }
+      },
+      {
+        path: "users",
+        element: <UsersList />,
+        loader: async ({ request }) => {
+          const url = new URL(request.url);
+          const page = url.searchParams.get('page') || '1';
+          
+          // 预加载相关数据
+          return defer({
+            users: loadUsers(page),
+            stats: loadUserStats(), // 延迟加载
+          });
+        }
+      }
+    ]
+  }
+]);
+
+// 使用defer进行流式数据加载
+import { defer, Await } from 'react-router-dom';
+import { Suspense } from 'react';
+
+function DeferredLoader() {
+  return defer({
+    criticalData: loadCriticalData(), // 立即需要的数据
+    slowData: loadSlowData(), // 可以延迟加载的数据
+  });
+}
+
+function Component() {
+  const { criticalData, slowData } = useLoaderData();
+  
+  return (
+    <div>
+      <h1>关键数据: {criticalData.title}</h1>
+      
+      <Suspense fallback={<div>加载中...</div>}>
+        <Await resolve={slowData}>
+          {(data) => (
+            <div>
+              <h2>延迟数据</h2>
+              <pre>{JSON.stringify(data, null, 2)}</pre>
+            </div>
+          )}
+        </Await>
+      </Suspense>
+    </div>
+  );
+}
+
+// 预加载优化
+function PrefetchOptimization() {
+  return (
+    <nav>
+      <Link
+        to="/users/123"
+        // 鼠标悬停时预加载
+        onMouseEnter={() => router.fetch('/users/123')}
+      >
+        用户详情
+      </Link>
+      
+      <Link
+        to="/dashboard"
+        // 链接可见时预加载
+        prefetch="intent"
+      >
+        仪表盘
+      </Link>
+    </nav>
+  );
+}
+```
+
 ### 17. React测试
 **问题**: 如何测试React组件？
 
@@ -1376,6 +1643,326 @@ describe('TodoApp集成测试', () => {
     expect(screen.queryByText('学习React')).not.toBeInTheDocument();
   });
 });
+```
+
+### 17.1. React Compiler 性能优化
+**问题**: React Compiler (React 19+) 如何自动优化组件性能？
+
+**答案**:
+React Compiler是React 19引入的编译时优化工具，它可以自动进行很多之前需要手动优化的工作：
+
+```jsx
+// 传统手动优化方式
+import { useState, useMemo, useCallback, memo } from 'react';
+
+const ExpensiveComponent = memo(({ items, onItemClick, filter }) => {
+  // 手动使用useMemo优化计算
+  const filteredItems = useMemo(() => {
+    return items.filter(item => 
+      item.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [items, filter]);
+  
+  // 手动使用useMemo优化对象创建
+  const stats = useMemo(() => ({
+    total: filteredItems.length,
+    active: filteredItems.filter(item => item.active).length
+  }), [filteredItems]);
+  
+  // 手动使用useCallback优化函数
+  const handleClick = useCallback((id) => {
+    onItemClick(id);
+  }, [onItemClick]);
+  
+  return (
+    <div>
+      <h2>统计: {stats.total} 项目, {stats.active} 活跃</h2>
+      {filteredItems.map(item => (
+        <ItemComponent
+          key={item.id}
+          item={item}
+          onClick={handleClick}
+        />
+      ))}
+    </div>
+  );
+});
+```
+
+```jsx
+// React Compiler 自动优化后的代码
+// 编译器会自动添加必要的memoization
+function ExpensiveComponent({ items, onItemClick, filter }) {
+  // 编译器自动识别并优化这个计算
+  const filteredItems = items.filter(item => 
+    item.name.toLowerCase().includes(filter.toLowerCase())
+  );
+  
+  // 编译器自动优化对象创建
+  const stats = {
+    total: filteredItems.length,
+    active: filteredItems.filter(item => item.active).length
+  };
+  
+  // 编译器自动优化函数定义
+  const handleClick = (id) => {
+    onItemClick(id);
+  };
+  
+  return (
+    <div>
+      <h2>统计: {stats.total} 项目, {stats.active} 活跃</h2>
+      {filteredItems.map(item => (
+        <ItemComponent
+          key={item.id}
+          item={item}
+          onClick={handleClick}
+        />
+      ))}
+    </div>
+  );
+}
+// 编译器会自动包装为memo，无需手动添加
+```
+
+**React Compiler 的核心优化机制**：
+
+```jsx
+// 1. 自动依赖追踪
+function AutoOptimizedComponent({ userId, preferences }) {
+  // 编译器自动识别依赖关系
+  const user = getUserData(userId); // 只在userId变化时重新执行
+  
+  // 编译器自动优化复杂计算
+  const processedData = processUserData(user, preferences);
+  
+  // 编译器自动优化JSX重新创建
+  const userProfile = (
+    <div>
+      <h1>{user.name}</h1>
+      <p>{user.email}</p>
+    </div>
+  );
+  
+  return (
+    <div>
+      {userProfile}
+      <DataDisplay data={processedData} />
+    </div>
+  );
+}
+
+// 2. 智能重新渲染控制
+function SmartComponent({ data, config }) {
+  // 编译器分析数据流，自动添加最小化重新渲染逻辑
+  const [state, setState] = useState(0);
+  
+  // 这个计算只在data变化时执行，不受state影响
+  const expensiveResult = calculateExpensiveValue(data);
+  
+  // 这部分UI只在expensiveResult变化时重新渲染
+  const expensiveUI = (
+    <ExpensiveVisualization result={expensiveResult} />
+  );
+  
+  // 这部分UI只在state变化时重新渲染  
+  const dynamicUI = (
+    <div>
+      <p>计数: {state}</p>
+      <button onClick={() => setState(state + 1)}>增加</button>
+    </div>
+  );
+  
+  return (
+    <div>
+      {expensiveUI}
+      {dynamicUI}
+    </div>
+  );
+}
+
+// 3. 自动代码分割和懒加载优化
+function LazyOptimizedComponent() {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // 编译器会自动将这个条件渲染拆分为代码块
+  const advancedFeatures = showAdvanced && (
+    <AdvancedFeatures /> // 自动懒加载
+  );
+  
+  return (
+    <div>
+      <button onClick={() => setShowAdvanced(!showAdvanced)}>
+        切换高级功能
+      </button>
+      {advancedFeatures}
+    </div>
+  );
+}
+```
+
+**编译器指令和配置**：
+
+```javascript
+// babel.config.js 或 webpack.config.js
+module.exports = {
+  presets: [
+    ['@babel/preset-react', {
+      runtime: 'automatic',
+      development: process.env.NODE_ENV === 'development'
+    }]
+  ],
+  plugins: [
+    // React Compiler plugin
+    ['babel-plugin-react-compiler', {
+      // 配置选项
+      runtimeModule: 'react-compiler-runtime',
+      
+      // 编译优化级别
+      optimizationLevel: 'aggressive', // 'conservative' | 'aggressive'
+      
+      // 排除某些组件不进行编译优化
+      exclude: [
+        'LegacyComponent',
+        /.*Legacy.*/
+      ],
+      
+      // 启用实验性优化
+      enableExperimental: true
+    }]
+  ]
+};
+
+// 组件级别的编译器指令
+'use compiler'; // 启用编译器优化
+
+function OptimizedComponent() {
+  // 这个组件会被编译器优化
+  return <div>Hello World</div>;
+}
+
+'use no-compiler'; // 禁用编译器优化
+
+function LegacyComponent() {
+  // 这个组件不会被编译器优化
+  return <div>Legacy Code</div>;
+}
+```
+
+**性能对比和效果测量**：
+
+```jsx
+// 性能监控和对比
+function PerformanceComparison() {
+  const [metrics, setMetrics] = useState({});
+  
+  useEffect(() => {
+    // 测量编译器优化效果
+    const measurePerformance = () => {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach(entry => {
+          if (entry.name.includes('React')) {
+            setMetrics(prev => ({
+              ...prev,
+              [entry.name]: entry.duration
+            }));
+          }
+        });
+      });
+      
+      observer.observe({ entryTypes: ['measure'] });
+    };
+    
+    measurePerformance();
+  }, []);
+  
+  return (
+    <div>
+      <h3>React Compiler 性能指标</h3>
+      <ul>
+        {Object.entries(metrics).map(([name, duration]) => (
+          <li key={name}>
+            {name}: {duration.toFixed(2)}ms
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// 编译器优化前后的Bundle大小对比
+const bundleAnalysis = {
+  beforeCompiler: {
+    size: '150KB',
+    renderTime: '45ms',
+    memoryUsage: '12MB'
+  },
+  afterCompiler: {
+    size: '140KB', // 减少10KB (移除了手动优化代码)
+    renderTime: '30ms', // 提升33%
+    memoryUsage: '9MB' // 减少25%
+  }
+};
+```
+
+**最佳实践和注意事项**：
+
+```jsx
+// 1. 编译器友好的代码模式
+function CompilerFriendly({ data }) {
+  // ✅ 推荐：简洁的数据处理
+  const processed = data.map(item => ({
+    ...item,
+    processed: true
+  }));
+  
+  // ✅ 推荐：直接的条件渲染
+  if (!data.length) {
+    return <EmptyState />;
+  }
+  
+  return (
+    <div>
+      {processed.map(item => (
+        <Item key={item.id} data={item} />
+      ))}
+    </div>
+  );
+}
+
+// 2. 避免编译器难以优化的模式
+function CompilerUnfriendly({ data }) {
+  // ❌ 避免：复杂的动态函数生成
+  const dynamicFunctions = useMemo(() => {
+    return data.reduce((acc, item) => {
+      acc[item.id] = (event) => {
+        // 复杂的动态逻辑
+        eval(`handle${item.type}Event(event)`);
+      };
+      return acc;
+    }, {});
+  }, [data]);
+  
+  // ❌ 避免：深度嵌套的条件逻辑
+  return (
+    <div>
+      {data.map(item => (
+        item.visible && (
+          item.type === 'A' ? (
+            item.subtype === 'X' ? (
+              <ComponentAX key={item.id} />
+            ) : (
+              <ComponentAY key={item.id} />
+            )
+          ) : (
+            <ComponentB key={item.id} />
+          )
+        )
+      ))}
+    </div>
+  );
+}
 ```
 
 ### 18. React性能监控
