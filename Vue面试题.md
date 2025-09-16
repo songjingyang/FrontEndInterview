@@ -2161,6 +2161,655 @@ const routes = [
 
 ---
 
+## Vue 3 Composition API 深度解析
+
+### 11. watch vs watchEffect 深度对比
+
+**问题**: watch 和 watchEffect 的区别是什么？各自的使用场景？
+
+**答案**:
+
+#### 基本差异对比
+
+```javascript
+import { ref, reactive, watch, watchEffect } from 'vue'
+
+export default {
+  setup() {
+    const count = ref(0)
+    const state = reactive({ name: 'Vue', version: 3 })
+
+    // 1. watch - 显式指定依赖
+    watch(count, (newVal, oldVal) => {
+      console.log(`count changed: ${oldVal} -> ${newVal}`)
+    })
+
+    // 监听多个数据源
+    watch([count, () => state.name], ([newCount, newName], [oldCount, oldName]) => {
+      console.log('Multiple values changed:', { newCount, newName, oldCount, oldName })
+    })
+
+    // 2. watchEffect - 自动依赖收集
+    watchEffect(() => {
+      console.log(`watchEffect: count is ${count.value}, name is ${state.name}`)
+    })
+
+    return { count, state }
+  }
+}
+```
+
+#### 详细特性对比
+
+| 特性 | watch | watchEffect |
+|------|--------|-------------|
+| **依赖追踪** | 显式指定监听源 | 自动收集依赖 |
+| **执行时机** | 数据变化时执行 | 立即执行 + 依赖变化时执行 |
+| **访问旧值** | 可以访问 oldValue | 无法访问旧值 |
+| **性能** | 精确控制，性能更好 | 自动追踪，便捷但可能过度触发 |
+| **调试难度** | 依赖明确，易调试 | 依赖隐式，调试相对困难 |
+
+#### 高级使用模式
+
+```javascript
+// watch 高级用法
+export default {
+  setup() {
+    const user = reactive({
+      profile: {
+        name: 'Vue',
+        age: 3
+      },
+      settings: {
+        theme: 'dark'
+      }
+    })
+
+    // 深度监听
+    watch(
+      () => user.profile,
+      (newProfile, oldProfile) => {
+        console.log('Profile changed:', newProfile)
+      },
+      {
+        deep: true, // 深度监听
+        immediate: true, // 立即执行
+        flush: 'sync' // 同步执行
+      }
+    )
+
+    // 条件性监听
+    const shouldWatch = ref(true)
+    const stopWatcher = watch(
+      () => user.profile.name,
+      (newName) => {
+        if (!shouldWatch.value) return
+        console.log('Name changed to:', newName)
+      }
+    )
+
+    // 手动停止监听
+    const handleStop = () => {
+      stopWatcher()
+    }
+
+    return { user, handleStop }
+  }
+}
+```
+
+```javascript
+// watchEffect 高级用法
+export default {
+  setup() {
+    const apiData = ref(null)
+    const loading = ref(false)
+    const userId = ref(1)
+
+    // 副作用清理
+    watchEffect((onInvalidate) => {
+      const controller = new AbortController()
+      
+      // 设置清理函数
+      onInvalidate(() => {
+        controller.abort()
+        console.log('Request cancelled')
+      })
+
+      // 执行副作用
+      loading.value = true
+      fetch(`/api/user/${userId.value}`, {
+        signal: controller.signal
+      })
+      .then(response => response.json())
+      .then(data => {
+        apiData.value = data
+      })
+      .catch(error => {
+        if (error.name !== 'AbortError') {
+          console.error('Fetch error:', error)
+        }
+      })
+      .finally(() => {
+        loading.value = false
+      })
+    })
+
+    // 控制执行时机
+    watchEffect(
+      () => {
+        console.log('DOM updated:', document.title)
+      },
+      {
+        flush: 'post' // DOM 更新后执行
+      }
+    )
+
+    return { apiData, loading, userId }
+  }
+}
+```
+
+#### 性能优化技巧
+
+```javascript
+// 性能优化实例
+export default {
+  setup() {
+    const expensiveData = ref(null)
+    const trigger = ref(0)
+
+    // ✅ 使用 watch 精确控制依赖
+    watch(trigger, async () => {
+      expensiveData.value = await computeExpensiveValue()
+    })
+
+    // ❌ watchEffect 可能造成不必要的执行
+    // watchEffect(async () => {
+    //   // 这里可能会因为其他响应式数据变化而重复执行
+    //   expensiveData.value = await computeExpensiveValue()
+    // })
+
+    // 防抖监听
+    const debouncedWatch = debounce(() => {
+      console.log('Debounced execution')
+    }, 300)
+
+    watch(trigger, debouncedWatch)
+
+    return { expensiveData, trigger }
+  }
+}
+
+// 防抖工具函数
+function debounce(fn, delay) {
+  let timeoutId
+  return function (...args) {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
+```
+
+#### 使用场景选择指南
+
+**使用 watch 的场景：**
+- 需要访问变化前后的值对比
+- 监听特定数据源，避免不必要的触发
+- 执行异步操作，需要精确控制时机
+- 性能敏感的场景
+- 需要条件性执行监听逻辑
+
+**使用 watchEffect 的场景：**
+- 编写声明式的副作用逻辑
+- 依赖关系复杂，手动指定困难
+- 原型开发或快速迭代阶段
+- 副作用逻辑相对简单
+- 需要立即执行的初始化逻辑
+
+### 12. 响应式 API 深度理解：ref、reactive、toRef、toRefs
+
+**问题**: 详细说明 ref、reactive、toRef、toRefs 的区别和使用场景？
+
+**答案**:
+
+#### ref - 基本类型响应式包装
+
+```javascript
+import { ref, isRef, unref } from 'vue'
+
+// 基本用法
+const count = ref(0)
+const message = ref('Hello Vue3')
+const user = ref({ name: 'John', age: 25 })
+
+console.log(count.value) // 访问值需要 .value
+console.log(isRef(count)) // true
+
+// ref 的特殊性
+export default {
+  setup() {
+    const num = ref(10)
+    const obj = ref({ a: 1, b: 2 })
+
+    // 在模板中自动解包
+    return { num, obj }
+  },
+  template: `
+    <!-- 模板中不需要 .value -->
+    <div>{{ num }}</div>
+    <div>{{ obj.a }}</div>
+  `
+}
+```
+
+```javascript
+// ref 高级特性
+export default {
+  setup() {
+    // 1. 自定义 ref
+    function useCounter(initialValue = 0) {
+      return customRef((track, trigger) => {
+        let value = initialValue
+        return {
+          get() {
+            track() // 追踪依赖
+            return value
+          },
+          set(newValue) {
+            value = newValue
+            trigger() // 触发更新
+          }
+        }
+      })
+    }
+
+    // 2. 防抖 ref
+    function useDebouncedRef(value, delay = 200) {
+      let timeout
+      return customRef((track, trigger) => {
+        return {
+          get() {
+            track()
+            return value
+          },
+          set(newValue) {
+            clearTimeout(timeout)
+            timeout = setTimeout(() => {
+              value = newValue
+              trigger()
+            }, delay)
+          }
+        }
+      })
+    }
+
+    const counter = useCounter(5)
+    const debouncedInput = useDebouncedRef('')
+
+    return { counter, debouncedInput }
+  }
+}
+```
+
+#### reactive - 对象响应式代理
+
+```javascript
+import { reactive, isReactive, readonly, isReadonly } from 'vue'
+
+// 基本用法
+const state = reactive({
+  user: {
+    name: 'Vue',
+    profile: {
+      email: 'vue@example.com',
+      preferences: {
+        theme: 'dark',
+        language: 'zh-CN'
+      }
+    }
+  },
+  settings: {
+    notifications: true
+  }
+})
+
+// 深度响应式
+state.user.profile.preferences.theme = 'light' // 会触发响应式更新
+
+console.log(isReactive(state)) // true
+console.log(isReactive(state.user)) // true（深度代理）
+```
+
+```javascript
+// reactive 注意事项和最佳实践
+export default {
+  setup() {
+    // ✅ 正确用法
+    const state = reactive({
+      list: [],
+      selectedId: null,
+      loading: false
+    })
+
+    // ✅ 方法也可以是响应式对象的一部分
+    const actions = reactive({
+      async fetchData() {
+        state.loading = true
+        try {
+          const response = await api.getData()
+          state.list = response.data
+        } finally {
+          state.loading = false
+        }
+      },
+      
+      selectItem(id) {
+        state.selectedId = id
+      }
+    })
+
+    // ❌ 避免解构赋值破坏响应式
+    // const { list, loading } = state // 失去响应式
+
+    // ✅ 正确的解构方式
+    const { list, loading } = toRefs(state)
+
+    return { state, actions, list, loading }
+  }
+}
+```
+
+```javascript
+// 响应式代理的边界情况
+export default {
+  setup() {
+    const state = reactive({
+      nested: {
+        count: 0
+      }
+    })
+
+    // 注意：重新赋值会破坏响应式连接
+    // ❌ 错误做法
+    // state.nested = { count: 10 } // 新对象不是响应式的
+
+    // ✅ 正确做法
+    Object.assign(state.nested, { count: 10 })
+    // 或者
+    state.nested.count = 10
+
+    return { state }
+  }
+}
+```
+
+#### toRef - 单个属性响应式转换
+
+```javascript
+import { reactive, toRef } from 'vue'
+
+export default {
+  setup() {
+    const state = reactive({
+      user: {
+        name: 'John',
+        age: 25
+      },
+      settings: {
+        theme: 'dark'
+      }
+    })
+
+    // 将响应式对象的属性转为独立的 ref
+    const userName = toRef(state.user, 'name')
+    const userAge = toRef(state.user, 'age')
+    const theme = toRef(state.settings, 'theme')
+
+    // 保持响应式连接
+    userName.value = 'Jane' // 会同时更新 state.user.name
+
+    console.log(state.user.name) // 'Jane'
+
+    return { userName, userAge, theme }
+  }
+}
+```
+
+```javascript
+// toRef 实际应用场景
+export default {
+  setup(props) {
+    // 1. Props 转 ref（保持响应式）
+    const title = toRef(props, 'title')
+    
+    // 2. 组合式函数中使用
+    function useUserProfile(user) {
+      const name = toRef(user, 'name')
+      const email = toRef(user, 'email')
+      
+      const displayName = computed(() => 
+        name.value ? name.value.toUpperCase() : 'Unknown'
+      )
+      
+      return { name, email, displayName }
+    }
+
+    const userState = reactive({
+      name: 'Vue Developer',
+      email: 'dev@vue.com'
+    })
+
+    const { name, email, displayName } = useUserProfile(userState)
+
+    return { title, name, email, displayName }
+  }
+}
+```
+
+#### toRefs - 批量属性响应式转换
+
+```javascript
+import { reactive, toRefs } from 'vue'
+
+export default {
+  setup() {
+    const state = reactive({
+      count: 0,
+      message: 'Hello',
+      user: {
+        name: 'Vue',
+        age: 3
+      },
+      settings: {
+        theme: 'dark',
+        lang: 'zh-CN'
+      }
+    })
+
+    // 批量转换为 ref
+    const stateRefs = toRefs(state)
+    
+    // 现在可以安全解构
+    const { count, message, user, settings } = stateRefs
+
+    // 保持响应式连接
+    count.value++ // 同时更新 state.count
+
+    return {
+      count,
+      message,
+      user,
+      settings
+    }
+  }
+}
+```
+
+```javascript
+// toRefs 在组合式函数中的应用
+function useCounter(initialValue = 0) {
+  const state = reactive({
+    count: initialValue,
+    doubleCount: computed(() => state.count * 2),
+    isEven: computed(() => state.count % 2 === 0)
+  })
+
+  const increment = () => state.count++
+  const decrement = () => state.count--
+  const reset = () => { state.count = initialValue }
+
+  // 返回时使用 toRefs 保持响应式
+  return {
+    ...toRefs(state),
+    increment,
+    decrement,
+    reset
+  }
+}
+
+export default {
+  setup() {
+    // 可以直接解构使用
+    const { count, doubleCount, isEven, increment, decrement, reset } = useCounter(10)
+
+    return {
+      count,
+      doubleCount,
+      isEven,
+      increment,
+      decrement,
+      reset
+    }
+  }
+}
+```
+
+#### 响应式 API 选择指南
+
+```javascript
+// 完整的响应式数据管理示例
+export default {
+  setup() {
+    // 1. 基本类型使用 ref
+    const loading = ref(false)
+    const error = ref(null)
+    const searchQuery = ref('')
+
+    // 2. 对象/数组使用 reactive
+    const state = reactive({
+      users: [],
+      pagination: {
+        page: 1,
+        pageSize: 10,
+        total: 0
+      },
+      filters: {
+        status: 'active',
+        role: 'all'
+      }
+    })
+
+    // 3. 需要解构时使用 toRefs
+    const stateRefs = toRefs(state)
+
+    // 4. 单个属性需要传递时使用 toRef
+    const currentPage = toRef(state.pagination, 'page')
+
+    // 组合逻辑
+    const fetchUsers = async () => {
+      loading.value = true
+      error.value = null
+      
+      try {
+        const response = await api.getUsers({
+          page: state.pagination.page,
+          pageSize: state.pagination.pageSize,
+          query: searchQuery.value,
+          ...state.filters
+        })
+        
+        state.users = response.data
+        state.pagination.total = response.total
+      } catch (err) {
+        error.value = err.message
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // 监听搜索查询
+    watch(searchQuery, () => {
+      state.pagination.page = 1 // 重置页码
+      fetchUsers()
+    }, { debounce: 300 })
+
+    return {
+      loading,
+      error,
+      searchQuery,
+      ...stateRefs,
+      currentPage,
+      fetchUsers
+    }
+  }
+}
+```
+
+#### 性能优化建议
+
+```javascript
+// 响应式数据性能优化
+export default {
+  setup() {
+    // 1. 使用 shallowRef 优化大对象
+    const largeData = shallowRef({
+      // 大量数据...
+    })
+
+    // 手动触发更新
+    const updateLargeData = (newData) => {
+      largeData.value = newData
+      triggerRef(largeData) // 手动触发
+    }
+
+    // 2. 使用 shallowReactive 优化深层对象
+    const config = shallowReactive({
+      api: {
+        baseURL: 'https://api.example.com',
+        timeout: 5000
+      },
+      ui: {
+        theme: 'dark',
+        locale: 'zh-CN'
+      }
+    })
+
+    // 3. 只读数据使用 readonly
+    const constants = readonly({
+      APP_NAME: 'Vue App',
+      VERSION: '1.0.0'
+    })
+
+    // 4. 计算属性缓存优化
+    const expensiveValue = computed(() => {
+      // 昂贵的计算...
+      return heavyComputation(largeData.value)
+    })
+
+    return {
+      largeData,
+      config,
+      constants,
+      expensiveValue,
+      updateLargeData
+    }
+  }
+}
+```
+
+---
+
 ## Vue2 vs Vue3 全面对比与优化
 
 ### 1. 架构设计革命
