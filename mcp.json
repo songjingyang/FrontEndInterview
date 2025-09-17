@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "寸止": {
+      "command": "寸止",
+      "args": []
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "BrowserTools MCP": {
+      "command": "npx",
+      "args": ["@agentdeskai/browser-tools-mcp@latest"]
+    },
+    "Playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  }
+}
+
+//  核心是寸止、context7是搜索最新文档 sequential-thinking是智能问题分析  BrowserTools MCP 和Playwright是开发网页项目必备的
