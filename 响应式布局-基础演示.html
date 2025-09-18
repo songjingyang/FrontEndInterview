@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>响应式布局 - 基础演示（媒体查询 + Flexbox）</title>
+    <style>
+      /* 重置样式 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+      }
+
+      /* 容器样式 */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* 头部样式 */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+
+      /* 导航栏样式 */
+      .navbar {
+        background: #2c3e50;
+        padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .nav-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #ecf0f1;
+      }
+
+      .nav-menu {
+        display: flex;
+        list-style: none;
+        gap: 2rem;
+      }
+
+      .nav-menu a {
+        color: #ecf0f1;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+      }
+
+      .nav-menu a:hover {
+        background-color: #34495e;
+      }
+
+      /* 主要内容区域 */
+      .main-content {
+        padding: 3rem 0;
+      }
+
+      .content-grid {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+      }
+
+      .main-article {
+        flex: 2;
+        min-width: 300px;
+      }
+
+      .sidebar {
+        flex: 1;
+        min-width: 250px;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .card h2 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-size: 1.8rem;
+      }
+
+      .card h3 {
+        color: #34495e;
+        margin-bottom: 0.8rem;
+        font-size: 1.3rem;
+      }
+
+      .card p {
+        margin-bottom: 1rem;
+        line-height: 1.7;
+      }
+
+      /* 特色卡片网格 */
+      .feature-grid {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin: 2rem 0;
+      }
+
+      .feature-card {
+        flex: 1;
+        min-width: 250px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        text-align: center;
+        padding: 2rem 1.5rem;
+        border-radius: 12px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .feature-card h3 {
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+      }
+
+      .feature-card p {
+        opacity: 0.9;
+      }
+
+      /* 响应式图片 */
+      .responsive-image {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 1rem 0;
+      }
+
+      /* 按钮样式 */
+      .btn {
+        display: inline-block;
+        padding: 0.8rem 1.5rem;
+        background: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .btn:hover {
+        background: #2980b9;
+      }
+
+      .btn-secondary {
+        background: #95a5a6;
+      }
+
+      .btn-secondary:hover {
+        background: #7f8c8d;
+      }
+
+      /* 页脚样式 */
+      .footer {
+        background: #2c3e50;
+        color: #ecf0f1;
+        text-align: center;
+        padding: 2rem 0;
+        margin-top: 3rem;
+      }
+
+      /* 移动端菜单按钮 */
+      .mobile-menu-btn {
+        display: none;
+        background: none;
+        border: none;
+        color: #ecf0f1;
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      /* 响应式断点 */
+
+      /* 平板设备 (768px 及以下) */
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .header p {
+          font-size: 1rem;
+        }
+
+        .nav-menu {
+          display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: #2c3e50;
+          flex-direction: column;
+          padding: 1rem;
+          gap: 0.5rem;
+        }
+
+        .nav-menu.active {
+          display: flex;
+        }
+
+        .mobile-menu-btn {
+          display: block;
+        }
+
+        .content-grid {
+          flex-direction: column;
+        }
+
+        .main-article,
+        .sidebar {
+          flex: none;
+          min-width: auto;
+        }
+
+        .feature-grid {
+          flex-direction: column;
+        }
+
+        .feature-card {
+          min-width: auto;
+        }
+
+        .container {
+          padding: 0 15px;
+        }
+      }
+
+      /* 手机设备 (480px 及以下) */
+      @media (max-width: 480px) {
+        .header {
+          padding: 1.5rem 0;
+        }
+
+        .header h1 {
+          font-size: 1.8rem;
+        }
+
+        .main-content {
+          padding: 2rem 0;
+        }
+
+        .card {
+          padding: 1rem;
+        }
+
+        .feature-card {
+          padding: 1.5rem 1rem;
+        }
+
+        .btn {
+          padding: 0.6rem 1.2rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      /* 大屏幕设备 (1200px 及以上) */
+      @media (min-width: 1200px) {
+        .container {
+          max-width: 1400px;
+        }
+
+        .header h1 {
+          font-size: 3rem;
+        }
+
+        .feature-grid {
+          gap: 2rem;
+        }
+      }
+
+      /* 打印样式 */
+      @media print {
+        .navbar,
+        .footer {
+          display: none;
+        }
+
+        .card {
+          box-shadow: none;
+          border: 1px solid #ddd;
+        }
+
+        .feature-card {
+          background: #f8f9fa !important;
+          color: #333 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 头部区域 -->
+    <header class="header">
+      <div class="container">
+        <h1>响应式设计演示</h1>
+        <p>使用媒体查询和 Flexbox 实现的响应式布局</p>
+      </div>
+    </header>
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-container">
+          <div class="logo">响应式网站</div>
+          <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            ☰
+          </button>
+          <ul class="nav-menu" id="navMenu">
+            <li><a href="#home">首页</a></li>
+            <li><a href="#about">关于</a></li>
+            <li><a href="#services">服务</a></li>
+            <li><a href="#contact">联系</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+      <div class="container">
+        <div class="content-grid">
+          <!-- 主文章区域 -->
+          <article class="main-article">
+            <div class="card">
+              <h2>响应式设计核心概念</h2>
+              <img
+                src="https://via.placeholder.com/600x300/667eea/ffffff?text=响应式图片"
+                alt="响应式设计示例"
+                class="responsive-image"
+              />
+              <p>
+                响应式设计是一种网页设计方法，使网站能够在各种设备和屏幕尺寸上提供最佳的用户体验。这种方法使用灵活的网格、图片和CSS媒体查询来适应不同的屏幕尺寸。
+              </p>
+
+              <h3>关键特性：</h3>
+              <ul>
+                <li><strong>弹性网格布局</strong>：使用相对单位而非固定像素</li>
+                <li><strong>弹性图片</strong>：图片能够自动缩放适应容器</li>
+                <li><strong>媒体查询</strong>：根据设备特性应用不同样式</li>
+                <li><strong>移动优先</strong>：从小屏幕开始设计，逐步增强</li>
+              </ul>
+
+              <p>
+                通过调整浏览器窗口大小，您可以观察到布局如何响应不同的屏幕尺寸。在移动设备上，导航菜单会折叠，内容会重新排列以适应较小的屏幕。
+              </p>
+            </div>
+
+            <!-- 特色卡片网格 -->
+            <div class="feature-grid">
+              <div class="feature-card">
+                <h3>📱 移动优先</h3>
+                <p>从小屏幕开始设计，确保在移动设备上的最佳体验</p>
+              </div>
+              <div class="feature-card">
+                <h3>🎨 弹性布局</h3>
+                <p>使用 Flexbox 和 Grid 创建灵活的响应式布局</p>
+              </div>
+              <div class="feature-card">
+                <h3>⚡ 性能优化</h3>
+                <p>优化图片和资源加载，提升用户体验</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- 侧边栏 -->
+          <aside class="sidebar">
+            <div class="card">
+              <h3>技术栈</h3>
+              <ul>
+                <li>HTML5 语义化标签</li>
+                <li>CSS3 媒体查询</li>
+                <li>Flexbox 布局</li>
+                <li>响应式图片</li>
+                <li>移动优先设计</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>断点设置</h3>
+              <ul>
+                <li><strong>手机：</strong> ≤ 480px</li>
+                <li><strong>平板：</strong> ≤ 768px</li>
+                <li><strong>桌面：</strong> ≤ 1024px</li>
+                <li><strong>大屏：</strong> ≥ 1200px</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>测试工具</h3>
+              <p>
+                使用浏览器开发者工具的设备模拟器来测试不同屏幕尺寸的显示效果。
+              </p>
+              <button class="btn">查看演示</button>
+              <button class="btn btn-secondary">下载源码</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2024 响应式设计演示. 使用现代 CSS 技术构建.</p>
+      </div>
+    </footer>
+
+    <script>
+      // 移动端菜单切换功能
+      function toggleMobileMenu() {
+        const navMenu = document.getElementById("navMenu");
+        navMenu.classList.toggle("active");
+      }
+
+      // 点击菜单项后关闭移动端菜单
+      document.querySelectorAll(".nav-menu a").forEach((link) => {
+        link.addEventListener("click", () => {
+          document.getElementById("navMenu").classList.remove("active");
+        });
+      });
+
+      // 窗口大小改变时的处理
+      window.addEventListener("resize", () => {
+        if (window.innerWidth > 768) {
+          document.getElementById("navMenu").classList.remove("active");
+        }
+      });
+    </script>
+  </body>
+</html>

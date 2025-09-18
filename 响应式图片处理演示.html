@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>响应式图片处理演示</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f8f9fa;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .header h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .section h2 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        font-size: 2rem;
+      }
+
+      /* 基础响应式图片 */
+      .responsive-img {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      /* 图片网格 */
+      .image-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+      }
+
+      .image-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .image-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .image-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+
+      .image-card-content {
+        padding: 1rem;
+      }
+
+      .image-card h3 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+      }
+
+      .image-card p {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      /* 不同尺寸的图片 */
+      .size-demo {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .size-item {
+        text-align: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .size-item img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+      }
+
+      .size-label {
+        font-weight: 600;
+        color: #495057;
+      }
+
+      /* 艺术方向演示 */
+      .art-direction {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin: 2rem 0;
+      }
+
+      .art-item {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+      }
+
+      .art-item h3 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+      }
+
+      /* 懒加载演示 */
+      .lazy-demo {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .lazy-item {
+        background: #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .lazy-item img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .lazy-item img.loaded {
+        opacity: 1;
+      }
+
+      /* 按钮样式 */
+      .btn {
+        display: inline-block;
+        padding: 0.8rem 1.5rem;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.3s ease;
+      }
+
+      .btn:hover {
+        background: #5a6fd8;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+      }
+
+      .btn-secondary:hover {
+        background: #5a6268;
+      }
+
+      /* 响应式断点 */
+      @media (max-width: 768px) {
+        .container {
+          padding: 1rem;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .section {
+          padding: 1.5rem;
+        }
+
+        .image-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .size-demo {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .header h1 {
+          font-size: 1.5rem;
+        }
+
+        .section h2 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="container">
+        <h1>响应式图片处理</h1>
+        <p>现代图片优化技术，提升网站性能和用户体验</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- 基础响应式图片 -->
+      <section class="section">
+        <h2>1. 基础响应式图片</h2>
+        <p>使用 CSS 让图片自动适应容器宽度，保持宽高比。</p>
+        <img
+          src="https://via.placeholder.com/800x400/667eea/ffffff?text=响应式图片"
+          alt="响应式图片示例"
+          class="responsive-img"
+        />
+      </section>
+
+      <!-- 不同尺寸演示 -->
+      <section class="section">
+        <h2>2. 不同尺寸的图片</h2>
+        <p>调整浏览器窗口大小，观察图片如何响应式调整。</p>
+        <div class="size-demo">
+          <div class="size-item">
+            <img
+              src="https://via.placeholder.com/400x300/ff6b6b/ffffff?text=小图"
+              alt="小图"
+            />
+            <div class="size-label">小尺寸图片</div>
+          </div>
+          <div class="size-item">
+            <img
+              src="https://via.placeholder.com/600x400/4ecdc4/ffffff?text=中图"
+              alt="中图"
+            />
+            <div class="size-label">中尺寸图片</div>
+          </div>
+          <div class="size-item">
+            <img
+              src="https://via.placeholder.com/800x500/45b7d1/ffffff?text=大图"
+              alt="大图"
+            />
+            <div class="size-label">大尺寸图片</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 图片网格 -->
+      <section class="section">
+        <h2>3. 响应式图片网格</h2>
+        <p>使用 CSS Grid 创建自适应的图片网格布局。</p>
+        <div class="image-grid">
+          <div class="image-card">
+            <img
+              src="https://via.placeholder.com/300x200/ff9a9e/ffffff?text=图片+1"
+              alt="图片1"
+            />
+            <div class="image-card-content">
+              <h3>图片标题 1</h3>
+              <p>这是一个响应式图片卡片示例</p>
+            </div>
+          </div>
+          <div class="image-card">
+            <img
+              src="https://via.placeholder.com/300x200/fecfef/ffffff?text=图片+2"
+              alt="图片2"
+            />
+            <div class="image-card-content">
+              <h3>图片标题 2</h3>
+              <p>图片会自动适应容器大小</p>
+            </div>
+          </div>
+          <div class="image-card">
+            <img
+              src="https://via.placeholder.com/300x200/a8edea/ffffff?text=图片+3"
+              alt="图片3"
+            />
+            <div class="image-card-content">
+              <h3>图片标题 3</h3>
+              <p>保持图片比例和清晰度</p>
+            </div>
+          </div>
+          <div class="image-card">
+            <img
+              src="https://via.placeholder.com/300x200/fed6e3/ffffff?text=图片+4"
+              alt="图片4"
+            />
+            <div class="image-card-content">
+              <h3>图片标题 4</h3>
+              <p>响应式设计的最佳实践</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 艺术方向演示 -->
+      <section class="section">
+        <h2>4. 艺术方向 (Art Direction)</h2>
+        <p>使用 picture 元素为不同屏幕尺寸提供不同的图片。</p>
+        <div class="art-direction">
+          <div class="art-item">
+            <h3>移动端图片 (竖屏)</h3>
+            <picture>
+              <source
+                media="(max-width: 768px)"
+                srcset="
+                  https://via.placeholder.com/400x600/667eea/ffffff?text=移动端+竖屏
+                "
+              />
+              <img
+                src="https://via.placeholder.com/800x400/764ba2/ffffff?text=桌面端+横屏"
+                alt="响应式图片"
+                class="responsive-img"
+              />
+            </picture>
+          </div>
+        </div>
+      </section>
+
+      <!-- 懒加载演示 -->
+      <section class="section">
+        <h2>5. 图片懒加载</h2>
+        <p>延迟加载图片，提升页面加载性能。</p>
+        <div class="lazy-demo">
+          <div class="lazy-item">
+            <img
+              data-src="https://via.placeholder.com/300x200/ff6b6b/ffffff?text=懒加载+1"
+              alt="懒加载图片1"
+              class="lazy-img"
+            />
+          </div>
+          <div class="lazy-item">
+            <img
+              data-src="https://via.placeholder.com/300x200/4ecdc4/ffffff?text=懒加载+2"
+              alt="懒加载图片2"
+              class="lazy-img"
+            />
+          </div>
+          <div class="lazy-item">
+            <img
+              data-src="https://via.placeholder.com/300x200/45b7d1/ffffff?text=懒加载+3"
+              alt="懒加载图片3"
+              class="lazy-img"
+            />
+          </div>
+          <div class="lazy-item">
+            <img
+              data-src="https://via.placeholder.com/300x200/f9ca24/ffffff?text=懒加载+4"
+              alt="懒加载图片4"
+              class="lazy-img"
+            />
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 1rem">
+          <button class="btn" onclick="loadLazyImages()">加载懒加载图片</button>
+        </div>
+      </section>
+
+      <!-- 现代图片格式 -->
+      <section class="section">
+        <h2>6. 现代图片格式支持</h2>
+        <p>使用 picture 元素支持多种图片格式，提供最佳性能。</p>
+        <div class="art-direction">
+          <div class="art-item">
+            <h3>WebP 格式支持</h3>
+            <picture>
+              <source
+                type="image/webp"
+                srcset="
+                  https://via.placeholder.com/600x300/667eea/ffffff?text=WebP+格式.webp
+                "
+              />
+              <img
+                src="https://via.placeholder.com/600x300/667eea/ffffff?text=JPEG+格式"
+                alt="现代图片格式"
+                class="responsive-img"
+              />
+            </picture>
+          </div>
+        </div>
+      </section>
+
+      <!-- 技术说明 -->
+      <section class="section">
+        <h2>7. 技术实现说明</h2>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+          "
+        >
+          <div>
+            <h3>CSS 响应式图片</h3>
+            <ul>
+              <li><code>width: 100%</code> - 适应容器宽度</li>
+              <li><code>height: auto</code> - 保持宽高比</li>
+              <li><code>max-width: 100%</code> - 防止溢出</li>
+              <li><code>object-fit: cover</code> - 填充容器</li>
+            </ul>
+          </div>
+          <div>
+            <h3>HTML 响应式图片</h3>
+            <ul>
+              <li><code>srcset</code> - 多尺寸图片源</li>
+              <li><code>sizes</code> - 图片显示尺寸</li>
+              <li><code>picture</code> - 艺术方向控制</li>
+              <li><code>loading="lazy"</code> - 懒加载</li>
+            </ul>
+          </div>
+          <div>
+            <h3>性能优化</h3>
+            <ul>
+              <li>图片压缩和优化</li>
+              <li>现代格式支持 (WebP, AVIF)</li>
+              <li>懒加载技术</li>
+              <li>CDN 加速</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer
+      style="
+        background: #2c3e50;
+        color: white;
+        text-align: center;
+        padding: 2rem;
+        margin-top: 3rem;
+      "
+    >
+      <h3>响应式图片处理</h3>
+      <p>提升网站性能和用户体验的现代图片优化技术</p>
+    </footer>
+
+    <script>
+      // 懒加载图片功能
+      function loadLazyImages() {
+        const lazyImages = document.querySelectorAll(".lazy-img");
+        lazyImages.forEach((img) => {
+          const src = img.getAttribute("data-src");
+          if (src) {
+            img.src = src;
+            img.classList.add("loaded");
+          }
+        });
+      }
+
+      // 自动懒加载（当图片进入视口时）
+      function initLazyLoading() {
+        const lazyImages = document.querySelectorAll(".lazy-img");
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              const src = img.getAttribute("data-src");
+              if (src) {
+                img.src = src;
+                img.classList.add("loaded");
+                observer.unobserve(img);
+              }
+            }
+          });
+        });
+
+        lazyImages.forEach((img) => {
+          imageObserver.observe(img);
+        });
+      }
+
+      // 页面加载完成后初始化
+      document.addEventListener("DOMContentLoaded", function () {
+        initLazyLoading();
+
+        // 添加一些交互效果
+        const imageCards = document.querySelectorAll(".image-card");
+        imageCards.forEach((card) => {
+          card.addEventListener("click", function () {
+            this.style.transform = "scale(0.95)";
+            setTimeout(() => {
+              this.style.transform = "";
+            }, 150);
+          });
+        });
+      });
+
+      // 显示图片信息
+      function showImageInfo() {
+        alert(
+          "响应式图片处理技术：\n\n1. CSS 响应式：width: 100%, height: auto\n2. HTML 响应式：srcset, sizes, picture\n3. 懒加载：提升性能\n4. 现代格式：WebP, AVIF\n5. 艺术方向：不同屏幕不同图片"
+        );
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>响应式布局 - CSS Grid 演示</title>
+    <style>
+      /* 重置样式 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f8f9fa;
+      }
+
+      /* 容器样式 */
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* 头部样式 */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+      }
+
+      .header p {
+        font-size: 1.3rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      /* 主要网格布局 */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 2rem;
+        padding: 3rem 0;
+        min-height: 80vh;
+      }
+
+      /* 网格区域定义 */
+      .hero-section {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        border-radius: 15px;
+        padding: 3rem;
+        text-align: center;
+        color: white;
+      }
+
+      .hero-section h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .hero-section p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+
+      .sidebar-left {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .main-content {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .sidebar-right {
+        grid-column: 3;
+        grid-row: 2;
+      }
+
+      .footer-section {
+        grid-column: 1 / -1;
+        grid-row: 3;
+      }
+
+      /* 卡片样式 */
+      .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      }
+
+      .card h3 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-size: 1.4rem;
+      }
+
+      .card p {
+        color: #666;
+        line-height: 1.7;
+      }
+
+      /* 特色网格展示 */
+      .feature-showcase {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+      }
+
+      .feature-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .feature-item:hover {
+        transform: scale(1.05);
+      }
+
+      .feature-item h4 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+      }
+
+      .feature-item p {
+        opacity: 0.9;
+      }
+
+      /* 图片网格 */
+      .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .gallery-item {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        aspect-ratio: 1;
+      }
+
+      .gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      .gallery-item:hover img {
+        transform: scale(1.1);
+      }
+
+      .gallery-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .gallery-item:hover .gallery-overlay {
+        opacity: 1;
+      }
+
+      /* 统计网格 */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .stat-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        display: block;
+      }
+
+      .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+
+      /* 按钮样式 */
+      .btn {
+        display: inline-block;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      /* 响应式断点 */
+
+      /* 大屏幕 (1200px 及以上) */
+      @media (min-width: 1200px) {
+        .main-grid {
+          grid-template-columns: 300px 1fr 300px;
+        }
+      }
+
+      /* 中等屏幕 (768px - 1199px) */
+      @media (max-width: 1199px) and (min-width: 768px) {
+        .main-grid {
+          grid-template-columns: 1fr 2fr;
+          grid-template-rows: auto auto auto auto;
+        }
+
+        .sidebar-left {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        .main-content {
+          grid-column: 2;
+          grid-row: 2;
+        }
+
+        .sidebar-right {
+          grid-column: 1 / -1;
+          grid-row: 3;
+        }
+
+        .footer-section {
+          grid-row: 4;
+        }
+      }
+
+      /* 平板设备 (768px 及以下) */
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2.2rem;
+        }
+
+        .header p {
+          font-size: 1.1rem;
+        }
+
+        .main-grid {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto auto auto;
+          gap: 1.5rem;
+        }
+
+        .hero-section {
+          grid-column: 1;
+          grid-row: 1;
+          padding: 2rem;
+        }
+
+        .hero-section h2 {
+          font-size: 2rem;
+        }
+
+        .sidebar-left {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        .main-content {
+          grid-column: 1;
+          grid-row: 3;
+        }
+
+        .sidebar-right {
+          grid-column: 1;
+          grid-row: 4;
+        }
+
+        .footer-section {
+          grid-row: 5;
+        }
+
+        .feature-showcase {
+          grid-template-columns: 1fr;
+        }
+
+        .image-gallery {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* 手机设备 (480px 及以下) */
+      @media (max-width: 480px) {
+        .container {
+          padding: 0 15px;
+        }
+
+        .header {
+          padding: 2rem 0;
+        }
+
+        .header h1 {
+          font-size: 1.8rem;
+        }
+
+        .main-grid {
+          gap: 1rem;
+        }
+
+        .card {
+          padding: 1.5rem;
+        }
+
+        .hero-section {
+          padding: 1.5rem;
+        }
+
+        .hero-section h2 {
+          font-size: 1.6rem;
+        }
+
+        .feature-item {
+          padding: 1.5rem;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .btn {
+          padding: 0.8rem 1.5rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      /* 超小屏幕 (320px 及以下) */
+      @media (max-width: 320px) {
+        .header h1 {
+          font-size: 1.5rem;
+        }
+
+        .card {
+          padding: 1rem;
+        }
+
+        .feature-item {
+          padding: 1rem;
+        }
+      }
+
+      /* 打印样式 */
+      @media print {
+        .main-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .card {
+          box-shadow: none;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+
+        .feature-item {
+          background: #f8f9fa !important;
+          color: #333 !important;
+        }
+      }
+
+      /* 高对比度模式 */
+      @media (prefers-contrast: high) {
+        .card {
+          border: 2px solid #000;
+        }
+
+        .btn {
+          border: 2px solid #000;
+        }
+      }
+
+      /* 减少动画模式 */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 头部区域 -->
+    <header class="header">
+      <div class="container">
+        <h1>CSS Grid 响应式布局</h1>
+        <p>使用现代 CSS Grid 技术创建的复杂响应式布局系统</p>
+      </div>
+    </header>
+
+    <!-- 主要内容网格 -->
+    <main class="main-grid">
+      <!-- 英雄区域 -->
+      <section class="hero-section">
+        <h2>强大的网格布局系统</h2>
+        <p>
+          CSS Grid
+          提供了最强大的二维布局能力，让您能够创建复杂而灵活的响应式设计
+        </p>
+        <button class="btn" onclick="showGridInfo()">了解更多</button>
+      </section>
+
+      <!-- 左侧边栏 -->
+      <aside class="sidebar-left">
+        <div class="card">
+          <h3>Grid 特性</h3>
+          <ul>
+            <li>二维布局控制</li>
+            <li>精确的网格定位</li>
+            <li>灵活的网格大小</li>
+            <li>强大的对齐功能</li>
+            <li>响应式网格</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>网格属性</h3>
+          <ul>
+            <li><code>grid-template-columns</code></li>
+            <li><code>grid-template-rows</code></li>
+            <li><code>grid-gap</code></li>
+            <li><code>grid-area</code></li>
+            <li><code>justify-items</code></li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- 主内容区域 -->
+      <section class="main-content">
+        <div class="card">
+          <h3>响应式网格系统</h3>
+          <p>
+            这个演示展示了如何使用 CSS Grid
+            创建完全响应式的布局。通过调整浏览器窗口大小，您可以观察到网格如何自动适应不同的屏幕尺寸。
+          </p>
+
+          <!-- 特色展示网格 -->
+          <div class="feature-showcase">
+            <div class="feature-item">
+              <h4>🎯 精确控制</h4>
+              <p>精确控制每个网格项的位置和大小</p>
+            </div>
+            <div class="feature-item">
+              <h4>📱 响应式</h4>
+              <p>自动适应不同屏幕尺寸</p>
+            </div>
+            <div class="feature-item">
+              <h4>⚡ 高性能</h4>
+              <p>浏览器原生支持，性能优异</p>
+            </div>
+            <div class="feature-item">
+              <h4>🔧 灵活</h4>
+              <p>支持复杂的布局需求</p>
+            </div>
+          </div>
+
+          <!-- 图片网格 -->
+          <h3>图片网格展示</h3>
+          <div class="image-gallery">
+            <div class="gallery-item">
+              <img
+                src="https://via.placeholder.com/300x300/667eea/ffffff?text=Grid+1"
+                alt="网格示例1"
+              />
+              <div class="gallery-overlay">
+                <span>网格项目 1</span>
+              </div>
+            </div>
+            <div class="gallery-item">
+              <img
+                src="https://via.placeholder.com/300x300/764ba2/ffffff?text=Grid+2"
+                alt="网格示例2"
+              />
+              <div class="gallery-overlay">
+                <span>网格项目 2</span>
+              </div>
+            </div>
+            <div class="gallery-item">
+              <img
+                src="https://via.placeholder.com/300x300/ff9a9e/ffffff?text=Grid+3"
+                alt="网格示例3"
+              />
+              <div class="gallery-overlay">
+                <span>网格项目 3</span>
+              </div>
+            </div>
+            <div class="gallery-item">
+              <img
+                src="https://via.placeholder.com/300x300/fecfef/ffffff?text=Grid+4"
+                alt="网格示例4"
+              />
+              <div class="gallery-overlay">
+                <span>网格项目 4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧边栏 -->
+      <aside class="sidebar-right">
+        <div class="card">
+          <h3>统计数据</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number">100%</span>
+              <div class="stat-label">响应式</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">2D</span>
+              <div class="stat-label">布局</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">12</span>
+              <div class="stat-label">列系统</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">∞</span>
+              <div class="stat-label">可能性</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>浏览器支持</h3>
+          <ul>
+            <li>Chrome 57+ ✅</li>
+            <li>Firefox 52+ ✅</li>
+            <li>Safari 10.1+ ✅</li>
+            <li>Edge 16+ ✅</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>学习资源</h3>
+          <p>推荐学习 CSS Grid 的优质资源：</p>
+          <ul>
+            <li>MDN CSS Grid 指南</li>
+            <li>Grid by Example</li>
+            <li>CSS-Tricks Grid 教程</li>
+          </ul>
+          <button class="btn">开始学习</button>
+        </div>
+      </aside>
+
+      <!-- 页脚区域 -->
+      <footer class="footer-section">
+        <div class="card">
+          <h3>Grid 布局优势</h3>
+          <div class="feature-showcase">
+            <div class="feature-item">
+              <h4>🎨 设计灵活性</h4>
+              <p>支持任意复杂的布局设计</p>
+            </div>
+            <div class="feature-item">
+              <h4>📐 精确控制</h4>
+              <p>像素级精确的布局控制</p>
+            </div>
+            <div class="feature-item">
+              <h4>🔄 自动适应</h4>
+              <p>智能适应不同屏幕尺寸</p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script>
+      function showGridInfo() {
+        alert(
+          "CSS Grid 是现代网页布局的强大工具！\n\n主要特点：\n• 二维布局控制\n• 精确的网格定位\n• 灵活的响应式设计\n• 强大的对齐功能\n\n调整浏览器窗口大小来查看响应式效果！"
+        );
+      }
+
+      // 添加一些交互效果
+      document.addEventListener("DOMContentLoaded", function () {
+        // 为卡片添加点击效果
+        const cards = document.querySelectorAll(".card");
+        cards.forEach((card) => {
+          card.addEventListener("click", function () {
+            this.style.transform = "scale(0.98)";
+            setTimeout(() => {
+              this.style.transform = "";
+            }, 150);
+          });
+        });
+
+        // 为统计数字添加动画效果
+        const statNumbers = document.querySelectorAll(".stat-number");
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.style.animation = "pulse 0.6s ease-in-out";
+            }
+          });
+        });
+
+        statNumbers.forEach((stat) => {
+          observer.observe(stat);
+        });
+      });
+
+      // 添加键盘导航支持
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Tab") {
+          document.body.classList.add("keyboard-navigation");
+        }
+      });
+
+      document.addEventListener("mousedown", function () {
+        document.body.classList.remove("keyboard-navigation");
+      });
+    </script>
+
+    <style>
+      /* 键盘导航样式 */
+      .keyboard-navigation .card:focus,
+      .keyboard-navigation .btn:focus {
+        outline: 3px solid #667eea;
+        outline-offset: 2px;
+      }
+
+      /* 脉冲动画 */
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
+  </body>
+</html>
